@@ -1,0 +1,9 @@
+[Unit]
+Description=Plant Care Delay Service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/bin/wait-for-timesync.sh
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,13 @@
+[Unit]
+Description=Plant Care Server
+#After=systemd-timesyncd-wait.service
+After=plantcare-wait.service
+
+
+[Service]
+ExecStart=/opt/bin/plantcare -c /etc/plantcare/server.conf
+WorkingDirectory=/srv/plantcare
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
