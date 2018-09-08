@@ -416,7 +416,7 @@ func (s *station) updateMinute(min int) {
 	defer s.mutex.Unlock()
 
 	// minutes since last measuring
-	numMins := (min - s.MinData.Time) % 60
+	numMins := (min - s.MinData.Time + 60) % 60
 	if len(s.MinData.Weight) == 0 {
 		// no data yet, its first measuring, set to 1
 		numMins = 1
