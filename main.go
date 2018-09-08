@@ -380,7 +380,7 @@ func (s *station) update(hour int) {
 		// calculate angle for picture
 
 		day := utc.Unix() / (24 * 60 * 60)
-		angle := uint(day % CPR)
+		angle := uint64(day)
 
 		err := s.wuc.Rotate(angle)
 		if err != nil {
@@ -565,7 +565,7 @@ func rotationHandler(s *station) func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err = s.wuc.Rotate(uint(a))
+		err = s.wuc.Rotate(uint64(a))
 		if err != nil {
 			fmt.Fprintln(w, "failed to rotate: ", err)
 			return

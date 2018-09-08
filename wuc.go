@@ -106,21 +106,19 @@ func (w *Wuc) waitForStop(timeout int) error {
 }
 
 // Rotate sends rotate command and waits for it to finish.
-func (w *Wuc) Rotate(angle uint) error {
+func (w *Wuc) Rotate(angle uint64) error {
 
-	if angle > CPR {
-		return fmt.Errorf("angle out of range: %v > %v", angle, CPR)
-	}
+	a := uint((angle * CPR / 360) % CPR)
 
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
-	log.Printf("rotating to %v(%v°)", angle, angle*360/CPR)
+	log.Printf("rotating to %v(%v°)", a, a*360/CPR)
 
 	cmd := []byte{
 		cmdRotate,
-		byte(angle & 0xFF),
-		byte((angle >> 8) & 0xFF),
+		byte(a & 0xFF),
+		byte((a >> 8) & 0xFF),
 	}
 
 	n, err := w.connection.Write(cmd)
