@@ -27,12 +27,12 @@ func CreatePiCam() *PiCam {
 }
 
 // TakePicture makes a picture with given exposure compensation value.
-func (c *PiCam) TakePicture(ev int) (string, error) {
+func (c *PiCam) TakePicture(folder string, ev int) (string, error) {
 
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	f, err := ioutil.TempFile("", "image-*.jpg")
+	f, err := ioutil.TempFile(folder, "image-")
 	if err != nil {
 		return "", err
 	}

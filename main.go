@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
 	"sort"
 	"strconv"
@@ -36,6 +37,8 @@ type station struct {
 	wuc           *Wuc
 	cam           *PiCam
 	serverConfig  `json:"-"`
+
+	pushCh chan<- bool
 }
 
 type measurementData struct {
@@ -66,8 +69,10 @@ type httpsConfig struct {
 }
 
 type filesConfig struct {
-	Config string
-	Data   string
+	Config     string
+	Data       string
+	Pictures   string
+	PushScript string
 }
 
 type serverConfig struct {
@@ -89,6 +94,8 @@ func main() {
 		log.Fatalf("failed to create connection to microcontroller: %v", err)
 	}
 
+	pushCh := make(chan bool, 1)
+
 	s := station{
 		serverConfig: serverConfig{
 			Login: loginConfig{
@@ -101,8 +108,10 @@ func main() {
 				Key:  "localhost.key",
 			},
 			Files: filesConfig{
-				Config: "/var/opt/plantcare/plant.conf",
-				Data:   "/var/opt/plantcare/data.json",
+				Config:     "/var/opt/plantcare/plant.conf",
+				Data:       "/var/opt/plantcare/data.json",
+				Pictures:   "/var/opt/plantcare/pics",
+				PushScript: "/opt/bin/plantcare-push-pics.sh",
 			},
 		},
 		Config: plantConfig{
@@ -121,6 +130,7 @@ func main() {
 			Weight:   make([]int, 0),
 			Watering: make([]int, 0),
 		},
+		pushCh: pushCh,
 	}
 
 	s.parseServerConfigFile(sconfFile)
@@ -158,11 +168,30 @@ func main() {
 			nil))
 	}()
 
+	go pushPictures(s.serverConfig.Files.PushScript, s.serverConfig.Files.Pictures, pushCh)
+
 	<-sigs
 	log.Print("shutting down")
 
 	s.saveData()
 	s.mutex.Lock()
+}
+
+func pushPictures(script, folder string, ch <-chan bool) {
+	for <-ch {
+		log.Println("uploading pictures")
+		out, err := exec.Command(script, folder).Output()
+		if len(out) > 0 {
+			log.Printf("%s\n", out)
+		}
+		switch e := err.(type) {
+		case nil:
+		case *exec.ExitError:
+			log.Println("failed to push pictures:", string(e.Stderr))
+		default:
+			log.Printf("failed to execute %s: %v", script, err)
+		}
+	}
 }
 
 func (s *station) parsePlantConfigFile() {
@@ -374,7 +403,8 @@ func (s *station) updateWeightAndWatering(hour int) {
 func (s *station) update(hour int) {
 	s.updateWeightAndWatering(hour)
 
-	utc := time.Now().UTC()
+	now := time.Now()
+	utc := now.UTC()
 
 	if utc.Hour() == s.Config.UpdateHour {
 		// calculate angle for picture
@@ -389,13 +419,36 @@ func (s *station) update(hour int) {
 		}
 
 		evs := []int{-10, 0, 10}
-		for _, ev := range evs {
-			file, err := s.cam.TakePicture(ev)
+		for i, ev := range evs {
+			file, err := s.cam.TakePicture(s.serverConfig.Files.Pictures, ev)
 			if err != nil {
-				log.Printf("")
+				log.Println("failed to take picture:", err)
+				if file != "" {
+					os.Remove(file)
+				}
+				continue
 			}
 
 			log.Println("image written", file)
+
+			dst := fmt.Sprintf("%s/image-%s-%d.jpg",
+				s.serverConfig.Files.Pictures, now.Format("2006-01-02-15"), i)
+
+			err = os.Rename(file, dst)
+			if err != nil {
+				log.Printf("failed to move %s to %s: %v", file, dst, err)
+			}
+		}
+
+		s.pushCh <- true
+
+		// os.Chdir(s.serverConfig.Files.Pictures)
+		// exec.Command("drive", "push", "-files", "-no-prompt", "-no-clobber", "plant")
+
+		angle = uint64(day*10 + 180*(day&1))
+		err = s.wuc.Rotate(angle)
+		if err != nil {
+			log.Println("failed to rotate plant: ", err)
 		}
 	}
 }
@@ -526,7 +579,7 @@ func pictureHandler(s *station) func(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		filename, err := s.cam.TakePicture(ev)
+		filename, err := s.cam.TakePicture("", ev)
 		if err != nil {
 			fmt.Fprint(w, "failed to take picture: ", err)
 			return
