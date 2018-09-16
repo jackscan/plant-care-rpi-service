@@ -408,7 +408,6 @@ func (s *station) update(hour int) {
 
 	if utc.Hour() == s.Config.UpdateHour {
 		// calculate angle for picture
-
 		day := utc.Unix() / (24 * 60 * 60)
 		angle := uint64(day)
 
@@ -432,7 +431,7 @@ func (s *station) update(hour int) {
 			log.Println("image written", file)
 
 			dst := fmt.Sprintf("%s/image-%s-%d.jpg",
-				s.serverConfig.Files.Pictures, now.Format("2006-01-02-15"), i)
+				s.serverConfig.Files.Pictures, now.Format("2006-01-02"), i)
 
 			err = os.Rename(file, dst)
 			if err != nil {
