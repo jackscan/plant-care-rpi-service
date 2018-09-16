@@ -27,6 +27,11 @@
                 <label for="rng">Range:</label>
                 <input id="rng" type="number" min="0" max="16384" required="true">
             </fieldset>
+            <fieldset>
+                <legend>Photo</legend>
+                <label for="updatehour">Hour:</label>
+                <input id="updatehour" type="number" min="0" max="23" required="true">
+            </fieldset>
             <input id="sendbutton" type="button" value="Send">
         </form>
     </div>
@@ -40,23 +45,22 @@
             return results === null ? null : decodeURIComponent(results[1].replace(/\+/g, ' '));
         }
 
-        var index = getParam('i') || "0";
-
         function getConfig() {
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function () {
                 if (this.readyState == 4 && this.status == 200) {
                     var resp = JSON.parse(xhttp.responseText);
-                    document.getElementById("hour").value = resp.hour;
+                    document.getElementById("hour").value = resp.waterhour;
                     document.getElementById("startw").value = resp.start/1000;
                     document.getElementById("maxw").value = resp.max/1000;
                     document.getElementById("minm").value = resp.low;
                     document.getElementById("dstm").value = resp.dst;
                     document.getElementById("rng").value = resp.range;
+                    document.getElementById("updatehour").value = resp.updatehour;
                 }
             };
 
-            xhttp.open("GET", "/config?i=" + index, true);
+            xhttp.open("GET", "/config", true);
             xhttp.send();
         }
 
@@ -69,15 +73,16 @@
             };
 
             var data = {
-                hour: Math.round(document.getElementById("hour").value),
+                waterhour: Math.round(document.getElementById("hour").value),
                 start: Math.floor(document.getElementById("startw").value * 1000),
                 max: Math.floor(document.getElementById("maxw").value * 1000),
                 low: Math.round(document.getElementById("minm").value),
                 dst: Math.round(document.getElementById("dstm").value),
                 range: Math.round(document.getElementById("rng").value),
+                updatehour: Math.round(document.getElementById("updatehour").value),
             };
 
-            xhttp.open("PUT", "/config?i=" + index, true);
+            xhttp.open("PUT", "/config", true);
             xhttp.send(JSON.stringify(data));
         }
 
