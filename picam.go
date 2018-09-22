@@ -27,7 +27,7 @@ func CreatePiCam() *PiCam {
 }
 
 // TakePicture makes a picture with given exposure compensation value.
-func (c *PiCam) TakePicture(folder string, ev int) (string, error) {
+func (c *PiCam) TakePicture(folder string, shutter int) (string, error) {
 
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -40,13 +40,19 @@ func (c *PiCam) TakePicture(folder string, ev int) (string, error) {
 	filename := f.Name()
 	f.Close()
 
-	log.Println("image ", filename, ", ev: ", ev)
+	log.Println("image ", filename, ", shutter: ", shutter)
 
 	args := []string{
 		"-o", filename,
-		"--exposure", "verylong",
-		"-t", "1",
-		"-ev", strconv.Itoa(ev),
+		"-ISO", "100",
+		"-ss", strconv.Itoa(shutter),
+		"-ex", "backlight",
+		"-mm", "average",
+		"-awb", "off",
+		"-awbg", "1.7,1.6",
+		"-ag", "1.0",
+		"-dg", "1.0",
+		"-t", "2",
 	}
 
 	cmd := exec.Command(c.exe, args...)
