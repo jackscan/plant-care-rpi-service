@@ -583,6 +583,7 @@ func pictureHandler(s *station) func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, "failed to take picture: ", err)
 			return
 		}
+		defer os.Remove(filename)
 
 		img, err := os.Open(filename)
 		if err != nil {
