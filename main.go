@@ -436,7 +436,10 @@ func (s *station) update(hour int) {
 			err = os.Rename(file, dst)
 			if err != nil {
 				log.Printf("failed to move %s to %s: %v", file, dst, err)
+				continue
 			}
+
+			log.Printf("image moved to %s", dst)
 		}
 
 		s.pushCh <- true
