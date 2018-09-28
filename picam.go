@@ -53,6 +53,9 @@ func (c *PiCam) TakePicture(folder string, shutter int) (string, error) {
 		"-ag", "1.0",
 		"-dg", "1.0",
 		"-t", "2000",
+		"-w", "2464‬",
+		"-h", "3280",
+		"-rot", "90",
 	}
 
 	cmd := exec.Command(c.exe, args...)
