@@ -417,7 +417,7 @@ func (s *station) update(hour int) {
 			return
 		}
 
-		shutter := []int{10000, 20000, 40000}
+		shutter := []int{10000, 25000, 50000}
 		for i, sh := range shutter {
 			file, err := s.cam.TakePicture(s.serverConfig.Files.Pictures, sh)
 			if err != nil {
