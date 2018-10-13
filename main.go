@@ -417,9 +417,9 @@ func (s *station) update(hour int) {
 			return
 		}
 
-		shutter := []int{10000, 25000, 50000}
-		for i, sh := range shutter {
-			file, err := s.cam.TakePicture(s.serverConfig.Files.Pictures, sh)
+		evs := []int{-10, 0, 10}
+		for i, ev := range evs {
+			file, err := s.cam.TakePicture(s.serverConfig.Files.Pictures, ev, 0)
 			if err != nil {
 				log.Println("failed to take picture:", err)
 				if file != "" {
@@ -570,18 +570,27 @@ func (s *station) sendConfig(w http.ResponseWriter) {
 func pictureHandler(s *station) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var err error
-		shutter := 0
-		sargs, ok := r.URL.Query()["s"]
-
-		if ok && len(sargs) > 0 {
-			shutter, err = strconv.Atoi(sargs[0])
+		ev := 0
+		evargs, ok := r.URL.Query()["ev"]
+		if ok && len(evargs) > 0 {
+			ev, err = strconv.Atoi(evargs[0])
 			if err != nil {
 				fmt.Fprintf(w, "invalid argument: %v", err)
 				return
 			}
 		}
 
-		filename, err := s.cam.TakePicture("", shutter)
+		shrink := 4
+		sargs, ok := r.URL.Query()["s"]
+		if ok && len(sargs) > 0 {
+			shrink, err = strconv.Atoi(sargs[0])
+			if err != nil {
+				fmt.Fprintf(w, "invalid argument: %v", err)
+				return
+			}
+		}
+
+		filename, err := s.cam.TakePicture("", ev, uint(shrink))
 		if err != nil {
 			fmt.Fprint(w, "failed to take picture: ", err)
 			return
