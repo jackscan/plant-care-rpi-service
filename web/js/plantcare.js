@@ -219,6 +219,9 @@ window.onload = function () {
                     minchart.data.datasets[0].data.push(mindata.weight[i]);
                 }
 
+                minchart.options.scales.yAxes[0].ticks.suggestedMin = Math.floor((config.low - config.range * 2) / 10) * 10;
+                minchart.options.scales.yAxes[0].ticks.suggestedMax = Math.ceil((config.dst + config.range * 2) / 10) * 10;
+
                 minchart.update();
             }
         };
