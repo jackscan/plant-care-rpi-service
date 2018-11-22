@@ -298,17 +298,91 @@ func pushSlice(s []int, v int, maxLen int) []int {
 	return append(s, v)
 }
 
+func (s *station) calculateDryoutAndWateringTime() (dryout, wateringTimeScale, wateringTimeOffset int) {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	// cumulative dryout rate
+	dryoutc := 0
+	// number of dryout hours accumulated in dryoutc
+	dryoutn := 0
+	prevw := 0
+	prevm := 0
+	numw := len(s.Data.Watering)
+	numm := len(s.Data.Weight)
+
+	// number of waterings
+	wn := float32(0)
+	// weight gain sum
+	wgsum := float32(0)
+	// squared sum of weight gain
+	wgsum2 := float32(0)
+	// watering time sum
+	wtsum := float32(0)
+	// dot product of weight gains and watering times
+	wgwtdot := float32(0)
+
+	for i, w := range s.Data.Watering {
+		if numw-i < numm {
+			m := s.Data.Weight[numm-numw+i]
+			if prevm > 0 {
+				if prevw > 0 {
+					fw := float32(prevw)
+					wg := float32(m - prevm)
+					//log.Printf("w: %v -> %v\n", fw, wg)
+					wgsum += wg
+					wtsum += fw
+					wgsum2 += wg * wg
+					wgwtdot += fw * wg
+					wn++
+				} else {
+					// log.Printf("dry: %v\n", prevm-m)
+					dryoutc += prevm - m
+					dryoutn++
+				}
+			}
+			prevm = m
+		}
+		prevw = w
+	}
+
+	if dryoutn > 0 {
+		dryout = dryoutc * 24 / dryoutn
+	} else {
+		log.Println("no dryout meassured")
+		dryout = 0
+	}
+
+	if wn > 0 && wgsum*wgsum < wgsum2*wn {
+		wts := (wgwtdot - wtsum*wgsum/wn) / (wgsum2 - wgsum*wgsum/wn)
+		wateringTimeOffset = int(wtsum/wn - wts*wgsum/wn)
+		wateringTimeScale = int(wts)
+	} else {
+		log.Println("cannot calculate watering times")
+		log.Printf("wn: %v\n", wn)
+		log.Printf("wgsum: %v\n", wgsum)
+		log.Printf("wgsum2: %v\n", wgsum2)
+		log.Printf("wtsum: %v\n", wtsum)
+		log.Printf("wgwtdot: %v\n", wgwtdot)
+
+		wateringTimeOffset = 0
+		wateringTimeScale = 0
+	}
+
+	return
+}
+
 func (s *station) calculateWatering(hour int, weight int) int {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	lastw := (s.Config.WaterStart + s.Config.MaxWater) / 2
+	// lastw := (s.Config.WaterStart + s.Config.MaxWater) / 2
 	durw := 0
 
 	if len(s.Data.Watering) > 0 {
 		for i := len(s.Data.Watering) - 1; i >= 0; i-- {
 			if s.Data.Watering[i] > 0 {
-				lastw = s.Data.Watering[i]
+				// lastw = s.Data.Watering[i]
 				break
 			}
 			durw = len(s.Data.Watering) - i
@@ -326,14 +400,22 @@ func (s *station) calculateWatering(hour int, weight int) int {
 
 	log.Printf("average weight since last watering: %v", avg)
 
-	dl := float32(s.Config.DstLevel - avg)
-	rl := float32(s.Config.LevelRange)
-	rw := float32(s.Config.MaxWater - s.Config.WaterStart)
-	dw := dl / rl * rw
+	// dl := float32(s.Config.DstLevel - avg)
+	// rl := float32(s.Config.LevelRange)
+	// rw := float32(s.Config.MaxWater - s.Config.WaterStart)
+	// dw := dl / rl * rw
 
-	log.Printf("adjusting watering time by %v", dw)
+	// log.Printf("adjusting watering time by %v", dw)
 
-	wt := lastw + int(dw+0.5)
+	// wt := lastw + int(dw+0.5)
+
+	dryout, wts, wto := s.calculateDryoutAndWateringTime()
+	dw := s.Config.DstLevel - weight + dryout/2
+	wt := wts*dw + wto
+
+	log.Printf("dryout: %v, wt scale: %v, wt offset: %v, delta weight: %v", dryout, wts, wto, dw)
+	log.Printf("watering time: %v", wt)
+
 	return clamp(wt, s.Config.WaterStart, s.Config.MaxWater) - s.Config.WaterStart
 }
 
@@ -713,7 +795,9 @@ func calcWateringHandler(s *station) func(w http.ResponseWriter, r *http.Request
 		s.mutex.RLock()
 		defer s.mutex.RUnlock()
 
-		fmt.Fprintf(w, "%v", s.calculateWatering(time.Now().Hour()+1, we))
+		dryout, wts, wto := s.calculateDryoutAndWateringTime()
+
+		fmt.Fprintf(w, "%v %v %v -> %v", dryout, wts, wto, s.calculateWatering(time.Now().Hour()+1, we))
 	}
 }
 
