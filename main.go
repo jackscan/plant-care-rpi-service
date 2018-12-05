@@ -529,7 +529,8 @@ func (s *station) update(hour int) {
 		// os.Chdir(s.serverConfig.Files.Pictures)
 		// exec.Command("drive", "push", "-files", "-no-prompt", "-no-clobber", "plant")
 
-		angle = uint64(day*10 + 180*(day&1))
+		angle = uint64(day * 190)
+		log.Printf("day: %v, angle: %v", day, angle)
 		err = s.wuc.Rotate(angle)
 		if err != nil {
 			log.Println("failed to rotate plant: ", err)
