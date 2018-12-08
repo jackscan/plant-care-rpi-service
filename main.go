@@ -409,11 +409,21 @@ func (s *station) calculateWatering(hour int, weight int) int {
 
 	// wt := lastw + int(dw+0.5)
 
+	// dryout per 24h, watering time scale, water time offset
 	dryout, wts, wto := s.calculateDryoutAndWateringTime()
-	dw := s.Config.DstLevel - weight + dryout/2
+	dlvl := s.Config.DstLevel - s.Config.LowLevel
+	if dlvl < 1 {
+		dlvl = 1
+	}
+
+	avgDryout := 0
+	if dryout > 0 {
+		avgDryout = ((2*dlvl)/dryout + 1) * dryout / 2
+	}
+	dw := s.Config.DstLevel - weight + avgDryout
 	wt := wts*dw + wto
 
-	log.Printf("dryout: %v, wt scale: %v, wt offset: %v, delta weight: %v", dryout, wts, wto, dw)
+	log.Printf("dryout: %v, avg dryout: %v, wt scale: %v, wt offset: %v, delta weight: %v", dryout, avgDryout, wts, wto, dw)
 	log.Printf("watering time: %v", wt)
 
 	return clamp(wt, s.Config.WaterStart, s.Config.MaxWater) - s.Config.WaterStart
