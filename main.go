@@ -572,36 +572,10 @@ func (s *station) update(hour int) {
 		day := utc.Unix() / (24 * 60 * 60)
 		angle := uint64(day)
 
-		err := s.wuc.Rotate(angle)
-		if err != nil {
-			log.Println("failed to rotate plant: ", err)
-			return
-		}
-
-		evs := []int{-10, 0, 10}
-		for i, ev := range evs {
-			file, err := s.cam.TakePicture(s.serverConfig.Files.Pictures, ev, 0)
-			if err != nil {
-				log.Println("failed to take picture:", err)
-				if file != "" {
-					os.Remove(file)
-				}
-				continue
-			}
-
-			log.Println("image written", file)
-
-			dst := fmt.Sprintf("%s/image-%s-%d.jpg",
-				s.serverConfig.Files.Pictures, now.Format("2006-01-02"), i)
-
-			err = os.Rename(file, dst)
-			if err != nil {
-				log.Printf("failed to move %s to %s: %v", file, dst, err)
-				continue
-			}
-
-			log.Printf("image moved to %s", dst)
-		}
+		timestr := now.Format("2006-01-02")
+		s.takePictures(angle, fmt.Sprintf("image-%s", timestr))
+		s.takePictures(angle+120, fmt.Sprintf("image-b-%s", timestr))
+		s.takePictures(angle+240, fmt.Sprintf("image-c-%s", timestr))
 
 		s.pushCh <- true
 
@@ -610,10 +584,43 @@ func (s *station) update(hour int) {
 
 		angle = uint64(day * 190)
 		log.Printf("day: %v, angle: %v", day, angle)
-		err = s.wuc.Rotate(angle)
+		err := s.wuc.Rotate(angle)
 		if err != nil {
 			log.Println("failed to rotate plant: ", err)
 		}
+	}
+}
+
+func (s *station) takePictures(angle uint64, fileBaseName string) {
+	err := s.wuc.Rotate(angle)
+	if err != nil {
+		log.Println("failed to rotate plant: ", err)
+		return
+	}
+
+	evs := []int{-10, 0, 10}
+	for i, ev := range evs {
+		file, err := s.cam.TakePicture(s.serverConfig.Files.Pictures, ev, 0)
+		if err != nil {
+			log.Println("failed to take picture:", err)
+			if file != "" {
+				os.Remove(file)
+			}
+			continue
+		}
+
+		log.Println("image written", file)
+
+		dst := fmt.Sprintf("%s/%s-%d.jpg",
+			s.serverConfig.Files.Pictures, fileBaseName, i)
+
+		err = os.Rename(file, dst)
+		if err != nil {
+			log.Printf("failed to move %s to %s: %v", file, dst, err)
+			continue
+		}
+
+		log.Printf("image moved to %s", dst)
 	}
 }
 
