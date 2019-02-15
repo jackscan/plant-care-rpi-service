@@ -166,10 +166,9 @@ func (w *Wuc) DoWatering(start, watering int) int {
 	}
 
 	// wait for:
-	//  - 2s for motor startup
 	//  - for watering to finish
 	//  - and some margin
-	time.Sleep(time.Duration(2000+watering+500) * time.Millisecond)
+	time.Sleep(time.Duration(start+watering+500) * time.Millisecond)
 
 	// might return 0 when rotation takes longer than desired
 	r, err := w.connection.ReadByte()

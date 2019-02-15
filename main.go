@@ -495,7 +495,7 @@ func (s *station) calculateWatering(hour int, weight int, save bool) int {
 	log.Printf("dryout: %v, avg dryout: %v, wt scale: %v, wt offset: %v, delta weight: %v", dryout, avgDryout, wts, wto, dw)
 	log.Printf("watering time: %v", wt)
 
-	return clamp(wt, s.Config.WaterStart, s.Config.MaxWater) - s.Config.WaterStart
+	return clamp(wt, s.Config.WaterStart, s.Config.MaxWater) - s.WateringTimeData.Offset
 }
 
 func clamp(v, min, max int) int {
@@ -549,7 +549,7 @@ func (s *station) updateWeightAndWatering(hour int) {
 		wt = s.calculateWatering(hour, w, true)
 	}
 	if wt > 0 {
-		wt = s.wuc.DoWatering(s.Config.WaterStart, wt)
+		wt = s.wuc.DoWatering(s.WateringTimeData.Offset, wt)
 	}
 
 	// update values
