@@ -22,6 +22,8 @@ import (
 
 	auth "github.com/abbot/go-http-auth"
 	"gobot.io/x/gobot/platforms/raspi"
+
+	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
 
 const backlogMinutes = 8 * 60
@@ -40,6 +42,8 @@ type station struct {
 	serverConfig  `json:"-"`
 
 	pushCh chan<- bool
+
+	mqttClient MQTT.Client
 }
 
 type wateringTimeData struct {
@@ -82,10 +86,19 @@ type filesConfig struct {
 	PushScript string
 }
 
+type mqttConfig struct {
+	Server   string
+	Topic    string
+	ClientID string
+	User     string
+	Pass     string
+}
+
 type serverConfig struct {
 	HTTPS httpsConfig
 	Login loginConfig
 	Files filesConfig
+	MQTT  mqttConfig
 }
 
 func main() {
@@ -145,6 +158,15 @@ func main() {
 	s.parsePlantConfigFile()
 	s.readData()
 	s.readWateringTime()
+
+	if s.MQTT.Server != "" {
+		connOpts := MQTT.NewClientOptions().AddBroker(s.MQTT.Server)
+		connOpts.SetClientID(s.MQTT.ClientID)
+		connOpts.SetUsername(s.MQTT.User)
+		connOpts.SetPassword(s.MQTT.Pass)
+
+		s.mqttClient = MQTT.NewClient(connOpts)
+	}
 
 	authenticator := auth.NewBasicAuthenticator("plant", s.secret())
 
@@ -296,6 +318,24 @@ func (s *station) saveData() {
 		log.Fatalf("failed to save measurement data to %s: %v",
 			s.serverConfig.Files.Data, err)
 	}
+}
+
+func (s *station) publish(topic string, qos byte, retained bool, payload string) error {
+
+	const timeout = time.Second * 10
+
+	if !s.mqttClient.IsConnected() {
+		log.Print("connecting to MQTT broker")
+		if token := s.mqttClient.Connect(); token.WaitTimeout(timeout) && token.Error() != nil {
+			return fmt.Errorf("failed to connect to MQTT broker: %v", token.Error())
+		}
+	}
+
+	if token := s.mqttClient.Publish(topic, qos, retained, payload); token.WaitTimeout(timeout) && token.Error() != nil {
+		return fmt.Errorf("timeout while publishing: %v", token.Error())
+	}
+
+	return nil
 }
 
 func (s *station) run() {
@@ -550,6 +590,7 @@ func (s *station) updateWeightAndWatering(hour int) {
 	}
 	if wt > 0 {
 		wt = s.wuc.DoWatering(s.WateringTimeData.Offset, wt)
+		s.publish(s.MQTT.Topic+"/water", byte(2), false, fmt.Sprint(wt))
 	}
 
 	// update values
@@ -654,6 +695,8 @@ func (s *station) updateMinute(min int) {
 	for i := 0; i < numMins; i++ {
 		s.MinData.Weight = pushSlice(s.MinData.Weight, w, backlogMinutes)
 	}
+
+	s.publish(s.MQTT.Topic+"/weight", byte(0), true, fmt.Sprint(w))
 }
 
 func dataHandler(s *station) func(w http.ResponseWriter, r *http.Request) {
