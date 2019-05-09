@@ -72,7 +72,7 @@ type loginConfig struct {
 	Pass string
 }
 
-type httpsConfig struct {
+type httpConfig struct {
 	Addr string
 	Cert string
 	Key  string
@@ -95,7 +95,7 @@ type mqttConfig struct {
 }
 
 type serverConfig struct {
-	HTTPS httpsConfig
+	HTTP  httpConfig
 	Login loginConfig
 	Files filesConfig
 	MQTT  mqttConfig
@@ -122,10 +122,8 @@ func main() {
 				User: "user",
 				Pass: "",
 			},
-			HTTPS: httpsConfig{
-				Addr: ":443",
-				Cert: "localhost.crt",
-				Key:  "localhost.key",
+			HTTP: httpConfig{
+				Addr: ":80",
 			},
 			Files: filesConfig{
 				Config:     "/var/opt/plantcare/plant.conf",
@@ -192,11 +190,16 @@ func main() {
 	go s.run()
 
 	go func() {
-		log.Fatal(http.ListenAndServeTLS(
-			s.serverConfig.HTTPS.Addr,
-			s.serverConfig.HTTPS.Cert,
-			s.serverConfig.HTTPS.Key,
-			nil))
+		if s.HTTP.Cert != "" {
+			log.Fatal(http.ListenAndServeTLS(
+				s.serverConfig.HTTP.Addr,
+				s.serverConfig.HTTP.Cert,
+				s.serverConfig.HTTP.Key,
+				nil))
+		} else {
+			log.Fatal(http.ListenAndServe(
+				s.serverConfig.HTTP.Addr, nil))
+		}
 	}()
 
 	go pushPictures(s.serverConfig.Files.PushScript, s.serverConfig.Files.Pictures, pushCh)
