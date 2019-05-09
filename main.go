@@ -913,21 +913,13 @@ func waterLimitHandler(s *station) func(w http.ResponseWriter, r *http.Request) 
 
 func calcWateringHandler(s *station) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var err error
-		we, err := s.wuc.ReadWeight()
-		if err != nil {
-			log.Println("failed to read weight: ", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprint(w, err)
-			return
-		}
 
 		s.mutex.RLock()
 		defer s.mutex.RUnlock()
 
 		dryout, wts, wto := s.calculateDryoutAndWateringTime()
 
-		fmt.Fprintf(w, "%v %v %v -> %v", dryout, wts, wto, s.calculateWatering(time.Now().Hour()+1, we, false))
+		fmt.Fprintf(w, "%v %v %v", dryout, wts, wto)
 	}
 }
 
