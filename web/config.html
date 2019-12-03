@@ -11,7 +11,7 @@
         <form id="configForm">
             <fieldset>
                 <legend>Watering</legend>
-                <label for="hour">Hour:</label>
+                <label for="hour">Hour (local):</label>
                 <input id="hour" type="number" min="0" max="23" required="true">
                 <label for="startw">Min:</label>
                 <input id="startw" type="number" min="0" max="60" step="0.1" required="true">
@@ -29,7 +29,7 @@
             </fieldset>
             <fieldset>
                 <legend>Photo</legend>
-                <label for="updatehour">Hour:</label>
+                <label for="updatehour">Hour (UTC):</label>
                 <input id="updatehour" type="number" min="0" max="23" required="true">
             </fieldset>
             <input id="sendbutton" type="button" value="Send">
