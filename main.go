@@ -472,8 +472,29 @@ func (s *station) calculateDryoutAndWateringTime() (dryout, wateringTimeScale, w
 		log.Printf("wtsum: %v\n", wtsum)
 		log.Printf("wgwtdot: %v\n", wgwtdot)
 
+		// fallback to old settings
+		wateringTimeOffset = s.WateringTimeData.Offset
+		wateringTimeScale = s.WateringTimeData.Scale
+	}
+
+	// check results
+	if wateringTimeOffset < 0 {
+		// clamp offset to zero, and calculate line through center of mass
+		log.Printf("clamping offset:  %v, %v",
+			wateringTimeScale, wateringTimeOffset)
 		wateringTimeOffset = 0
-		wateringTimeScale = 0
+		if wgsum > 0 {
+			wateringTimeScale = int(wtsum / wgsum)
+		}
+	} else if wateringTimeScale < 0 {
+		// set offset to half of average watering time,
+		// and calculate line through center of mass
+		log.Printf("clamping scale:  %v, %v",
+			wateringTimeScale, wateringTimeOffset)
+		if wn > 0 {
+			wateringTimeOffset = int(0.5 * wtsum / wn)
+		}
+		wateringTimeScale = int(wtsum * 0.5 / wgsum)
 	}
 
 	return
