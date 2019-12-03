@@ -527,7 +527,7 @@ func (s *station) calculateWatering(hour int, weight int, save bool) int {
 	if dryout > 0 {
 		avgDryout = ((2*dlvl)/dryout + 1) * dryout / 2
 	}
-	dw := s.Config.DstLevel - weight + avgDryout
+	dw := s.Config.DstLevel - weight // + avgDryout
 	wt := wts*dw + wto
 
 	if save {
