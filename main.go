@@ -27,7 +27,7 @@ import (
 )
 
 const backlogMinutes = 8 * 60
-const backlogDays = 8
+const backlogDays = 12
 
 type station struct {
 	Data             measurementData  `json:"data"`
