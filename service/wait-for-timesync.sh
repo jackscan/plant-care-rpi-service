@@ -1,6 +1,4 @@
 #!/bin/sh
 
-while /usr/bin/timedatectl status | /usr/bin/grep -e 'synchronized: no'
-do
-    /usr/bin/sleep 1
-done
+# wait 3 minutes (18*10s) for clock to be at most 10min off
+/usr/bin/chronyc waitsync 18 10
