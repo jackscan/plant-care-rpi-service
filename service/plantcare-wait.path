@@ -1,6 +1,0 @@
-[Unit]
-Description=Plant Care Delay Path Unit
-
-[Path]
-PathExists=/dev/i2c-1
-PathExists=/var/lib/systemd/timesync/clock

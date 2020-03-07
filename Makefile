@@ -12,7 +12,6 @@ program = plantcare
 
 files = $(DESTDIR)$(prefix)/bin/$(program)
 files += $(patsubst $(srcdir)/service/%,$(DESTDIR)$(prefix)/bin/%,$(wildcard $(srcdir)/service/*.sh))
-files += $(patsubst $(srcdir)/service/%,$(servicedir)/%,$(wildcard $(srcdir)/service/*.service $(srcdir)/service/*.path))
 files += $(DESTDIR)$(varprefix)/plantcare
 files += $(DESTDIR)$(varprefix)/plantcare/pics
 files += $(patsubst $(srcdir)/camweb/%,$(srvdir)/camweb/%,$(wildcard $(srcdir)/camweb/*.html))
@@ -37,12 +36,6 @@ $(DESTDIR)$(varprefix)/plantcare/pics:
 
 $(DESTDIR)$(prefix)/bin/%.sh: $(srcdir)/service/%.sh
 	install -DTm755 $< $@
-
-$(servicedir)/%.service: $(srcdir)/service/%.service
-	install -DTm644 $< $@
-
-$(servicedir)/%.path: $(srcdir)/service/%.path
-	install -DTm644 $< $@
 
 $(DESTDIR)$(srvprefix)/plantcare/camweb/%.html: $(srcdir)/camweb/%.html
 	install -DTm600 $< $@
