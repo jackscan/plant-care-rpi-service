@@ -28,6 +28,11 @@
                 <input id="rng" type="number" min="0" max="16384" required="true">
             </fieldset>
             <fieldset>
+                <legend>Orientation</legend>
+                <label for="orientation">Angle:</label>
+                <input id="orientation" type="number" min="0" max="359">
+            </fieldset>
+            <fieldset>
                 <legend>Photo</legend>
                 <label for="updatehour">Hour (UTC):</label>
                 <input id="updatehour" type="number" min="0" max="23" required="true">
@@ -57,6 +62,7 @@
                     document.getElementById("dstm").value = resp.dst;
                     document.getElementById("rng").value = resp.range;
                     document.getElementById("updatehour").value = resp.updatehour;
+                    document.getElementById("orientation").value = resp.orientation;
                 }
             };
 
@@ -81,6 +87,8 @@
                 range: Math.round(document.getElementById("rng").value),
                 updatehour: Math.round(document.getElementById("updatehour").value),
             };
+            var orientation = document.getElementById("orientation").value;
+            data.orientation = orientation.length > 0 ? Math.round(orientation) : null;
 
             xhttp.open("PUT", "/config", true);
             xhttp.send(JSON.stringify(data));

@@ -58,13 +58,14 @@ type measurementData struct {
 }
 
 type plantConfig struct {
-	WaterHour  int `json:"waterhour"`
-	WaterStart int `json:"start"`
-	MaxWater   int `json:"max"`
-	LowLevel   int `json:"low"`
-	DstLevel   int `json:"dst"`
-	LevelRange int `json:"range"`
-	UpdateHour int `json:"updatehour"`
+	WaterHour        int  `json:"waterhour"`
+	WaterStart       int  `json:"start"`
+	MaxWater         int  `json:"max"`
+	LowLevel         int  `json:"low"`
+	DstLevel         int  `json:"dst"`
+	LevelRange       int  `json:"range"`
+	UpdateHour       int  `json:"updatehour"`
+	FixedOrientation *int `json:"orientation"`
 }
 
 type loginConfig struct {
@@ -647,8 +648,13 @@ func (s *station) update(hour int) {
 		// os.Chdir(s.serverConfig.Files.Pictures)
 		// exec.Command("drive", "push", "-files", "-no-prompt", "-no-clobber", "plant")
 
-		angle = uint64(day * 190)
-		log.Printf("day: %v, angle: %v", day, angle)
+		if s.Config.FixedOrientation != nil {
+			angle = uint64(*s.Config.FixedOrientation)
+			log.Printf("fixed orientation: %v", angle)
+		} else {
+			angle = uint64(day * 190)
+			log.Printf("day: %v, angle: %v", day, angle)
+		}
 		err := s.wuc.Rotate(angle)
 		if err != nil {
 			log.Println("failed to rotate plant: ", err)
