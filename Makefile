@@ -14,7 +14,6 @@ files = $(DESTDIR)$(prefix)/bin/$(program)
 files += $(patsubst $(srcdir)/service/%,$(DESTDIR)$(prefix)/bin/%,$(wildcard $(srcdir)/service/*.sh))
 files += $(DESTDIR)$(varprefix)/plantcare
 files += $(DESTDIR)$(varprefix)/plantcare/pics
-files += $(patsubst $(srcdir)/camweb/%,$(srvdir)/camweb/%,$(wildcard $(srcdir)/camweb/*.html))
 files += $(patsubst $(srcdir)/web/%,$(srvdir)/web/%,$(wildcard $(srcdir)/web/*.html))
 files += $(patsubst $(srcdir)/web/js/%,$(srvdir)/web/js/%,$(wildcard $(srcdir)/web/js/*.js))
 
@@ -36,9 +35,6 @@ $(DESTDIR)$(varprefix)/plantcare/pics:
 
 $(DESTDIR)$(prefix)/bin/%.sh: $(srcdir)/service/%.sh
 	install -DTm755 $< $@
-
-$(DESTDIR)$(srvprefix)/plantcare/camweb/%.html: $(srcdir)/camweb/%.html
-	install -DTm600 $< $@
 
 $(DESTDIR)$(srvprefix)/plantcare/web/%.html: $(srcdir)/web/%.html
 	install -DTm600 $< $@
