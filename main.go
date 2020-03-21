@@ -62,7 +62,7 @@ type plantConfig struct {
 	WaterStart       int  `json:"start"`
 	MaxWater         int  `json:"max"`
 	LowLevel         int  `json:"low"`
-	DstLevel         int  `json:"dst"`
+	HighLevel        int  `json:"dst"`
 	LevelRange       int  `json:"range"`
 	UpdateHour       int  `json:"updatehour"`
 	FixedOrientation *int `json:"orientation"`
@@ -139,7 +139,7 @@ func main() {
 			WaterStart: 2000,
 			MaxWater:   20000,
 			LowLevel:   1400,
-			DstLevel:   1500,
+			HighLevel:  1500,
 			LevelRange: 100,
 			UpdateHour: 9,
 		},
@@ -540,7 +540,7 @@ func (s *station) calculateWatering(hour int, weight int, save bool) int {
 
 	// dryout per 24h, watering time scale, water time offset
 	dryout, wts, wto := s.calculateDryoutAndWateringTime()
-	dlvl := s.Config.DstLevel - s.Config.LowLevel
+	dlvl := s.Config.HighLevel - s.Config.LowLevel
 	if dlvl < 1 {
 		dlvl = 1
 	}
@@ -549,7 +549,7 @@ func (s *station) calculateWatering(hour int, weight int, save bool) int {
 	if dryout > 0 {
 		avgDryout = ((2*dlvl)/dryout + 1) * dryout / 2
 	}
-	dw := s.Config.DstLevel - weight // + avgDryout
+	dw := s.Config.HighLevel - weight // + avgDryout
 	wt := wts*dw + wto
 
 	if save {
