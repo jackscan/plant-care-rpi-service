@@ -420,6 +420,7 @@ func (s *station) calculateDryoutAndWateringTime() (dryout, wateringTimeScale, w
 	for i, w := range s.Data.Watering {
 		if numw-i < numm {
 			m := s.Data.Weight[numm-numw+i]
+			maxWeightVariation := m / 200
 			if prevm > 0 {
 				if prevw > 0 {
 					fw := float32(prevw)
@@ -431,7 +432,7 @@ func (s *station) calculateDryoutAndWateringTime() (dryout, wateringTimeScale, w
 					// wgsum2 += wg * wg
 					// wgwtdot += fw * wg
 					// wn++
-				} else {
+				} else if prevm > m-maxWeightVariation {
 					// log.Printf("dry: %v\n", prevm-m)
 					dryoutc += prevm - m
 					dryoutn++
