@@ -526,9 +526,7 @@ func (s *station) calculateWatering(hour int, weight int, save bool) int {
 		sum += s.Data.Weight[i]
 	}
 
-	avg := sum / (durw + 1)
-
-	log.Printf("average weight since last watering: %v", avg)
+	log.Printf("last watered %v hours ago, last weight: %v", durw, prevw)
 
 	// dl := float32(s.Config.DstLevel - avg)
 	// rl := float32(s.Config.LevelRange)
