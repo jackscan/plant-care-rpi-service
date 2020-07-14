@@ -22,10 +22,10 @@
                 <legend>Weight</legend>
                 <label for="minm">Min:</label>
                 <input id="minm" type="number" min="0" max="16384" required="true">
-                <label for="dstm">Target:</label>
+                <label for="dstm">Max:</label>
                 <input id="dstm" type="number" min="0" max="16384" required="true">
-                <label for="rng">Range:</label>
-                <input id="rng" type="number" min="0" max="16384" required="true">
+                <label for="refill">Daily Refill:</label>
+                <input id="refill" type="number" min="0" max="100" required="true">
             </fieldset>
             <fieldset>
                 <legend>Orientation</legend>
@@ -59,8 +59,8 @@
                     document.getElementById("startw").value = resp.start/1000;
                     document.getElementById("maxw").value = resp.max/1000;
                     document.getElementById("minm").value = resp.low;
-                    document.getElementById("dstm").value = resp.dst;
-                    document.getElementById("rng").value = resp.range;
+                    document.getElementById("dstm").value = resp.high;
+                    document.getElementById("refill").value = resp.refill;
                     document.getElementById("updatehour").value = resp.updatehour;
                     document.getElementById("orientation").value = resp.orientation;
                 }
@@ -83,8 +83,8 @@
                 start: Math.floor(document.getElementById("startw").value * 1000),
                 max: Math.floor(document.getElementById("maxw").value * 1000),
                 low: Math.round(document.getElementById("minm").value),
-                dst: Math.round(document.getElementById("dstm").value),
-                range: Math.round(document.getElementById("rng").value),
+                high: Math.round(document.getElementById("dstm").value),
+                refill: Math.round(document.getElementById("refill").value),
                 updatehour: Math.round(document.getElementById("updatehour").value),
             };
             var orientation = document.getElementById("orientation").value;

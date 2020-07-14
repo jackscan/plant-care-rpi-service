@@ -191,19 +191,17 @@ window.onload = function () {
                         chart.data.datasets[1].data.push(avg);
                 }
 
-                var col = { range: '#c0c0c0', low: '#ff0000', dst: '#40b000' };
+                var col = { low: '#ff0000', high: '#40b000' };
 
 
                 var config = resp.config;
                 chart.options.scales.yAxes[0].ticks.min = 0;
                 chart.options.scales.yAxes[0].ticks.max = Math.ceil(config.max / 1000);
-                chart.options.scales.yAxes[1].ticks.suggestedMin = Math.floor((config.low - config.range * 2) / 10) * 10;
-                chart.options.scales.yAxes[1].ticks.suggestedMax = Math.ceil((config.dst + config.range * 2) / 10) * 10;
+                chart.options.scales.yAxes[1].ticks.suggestedMin = Math.floor((config.low) / 10) * 10;
+                chart.options.scales.yAxes[1].ticks.suggestedMax = Math.ceil((config.high) / 10) * 10;
 
-                chart.options.horizontalLine.push({y: config.dst-config.range, style: col.range});
-                chart.options.horizontalLine.push({y: config.dst+config.range, style: col.range});
                 chart.options.horizontalLine.push({y: config.low, style: col.low});
-                chart.options.horizontalLine.push({y: config.dst, style: col.dst});
+                chart.options.horizontalLine.push({y: config.high, style: col.high});
 
                 chart.update();
 
@@ -219,8 +217,8 @@ window.onload = function () {
                     minchart.data.datasets[0].data.push(mindata.weight[i]);
                 }
 
-                minchart.options.scales.yAxes[0].ticks.suggestedMin = Math.floor((config.low - config.range * 2) / 10) * 10;
-                minchart.options.scales.yAxes[0].ticks.suggestedMax = Math.ceil((config.dst + config.range * 2) / 10) * 10;
+                minchart.options.scales.yAxes[0].ticks.suggestedMin = Math.floor((config.low) / 10) * 10;
+                minchart.options.scales.yAxes[0].ticks.suggestedMax = Math.ceil((config.high) / 10) * 10;
 
                 minchart.update();
             }

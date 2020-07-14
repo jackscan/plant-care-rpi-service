@@ -62,7 +62,8 @@ type plantConfig struct {
 	WaterStart       int  `json:"start"`
 	MaxWater         int  `json:"max"`
 	LowLevel         int  `json:"low"`
-	HighLevel        int  `json:"dst"`
+	HighLevel        int  `json:"high"`
+	DailyRefill      int  `json:"refill"`
 	LevelRange       int  `json:"range"`
 	UpdateHour       int  `json:"updatehour"`
 	FixedOrientation *int `json:"orientation"`
@@ -135,13 +136,14 @@ func main() {
 			},
 		},
 		Config: plantConfig{
-			WaterHour:  20,
-			WaterStart: 2000,
-			MaxWater:   20000,
-			LowLevel:   1400,
-			HighLevel:  1500,
-			LevelRange: 100,
-			UpdateHour: 9,
+			WaterHour:   20,
+			WaterStart:  2000,
+			MaxWater:    20000,
+			LowLevel:    1400,
+			HighLevel:   1500,
+			DailyRefill: 10,
+			LevelRange:  100,
+			UpdateHour:  9,
 		},
 		wuc: w,
 		cam: CreatePiCam(),
@@ -507,23 +509,21 @@ func (s *station) calculateWatering(hour int, weight int, save bool) int {
 	defer s.mutex.RUnlock()
 
 	// lastw := (s.Config.WaterStart + s.Config.MaxWater) / 2
-	durw := 0
+	durw := 1
 
 	if len(s.Data.Watering) > 0 {
 		for i := len(s.Data.Watering) - 1; i >= 0; i-- {
+			durw = len(s.Data.Watering) - i
 			if s.Data.Watering[i] > 0 {
 				// lastw = s.Data.Watering[i]
 				break
 			}
-			durw = len(s.Data.Watering) - i
 		}
 	}
 
-	log.Printf("last watered %v hours ago", durw+1)
-
-	sum := weight
-	for i := len(s.Data.Weight) - durw; i < len(s.Data.Weight); i++ {
-		sum += s.Data.Weight[i]
+	prevw := weight
+	if durw > 1 && len(s.Data.Weight) >= durw {
+		prevw = s.Data.Weight[len(s.Data.Weight)-durw+1]
 	}
 
 	log.Printf("last watered %v hours ago, last weight: %v", durw, prevw)
@@ -538,17 +538,18 @@ func (s *station) calculateWatering(hour int, weight int, save bool) int {
 	// wt := lastw + int(dw+0.5)
 
 	// dryout per 24h, watering time scale, water time offset
-	dryout, wts, wto := s.calculateDryoutAndWateringTime()
-	dlvl := s.Config.HighLevel - s.Config.LowLevel
-	if dlvl < 1 {
-		dlvl = 1
-	}
 
-	avgDryout := 0
-	if dryout > 0 {
-		avgDryout = ((2*dlvl)/dryout + 1) * dryout / 2
+	dryout, wts, wto := s.calculateDryoutAndWateringTime()
+
+	dw := 0
+	if weight > s.Config.LowLevel {
+		dw = prevw - dryout*durw/24 + s.Config.DailyRefill - weight
+		if dw > prevw-weight {
+			dw = prevw - weight
+		}
+	} else {
+		dw = s.Config.HighLevel - weight
 	}
-	dw := s.Config.HighLevel - weight // + avgDryout
 	wt := wts*dw + wto
 
 	if save {
@@ -556,7 +557,7 @@ func (s *station) calculateWatering(hour int, weight int, save bool) int {
 		s.WateringTimeData.Scale = wts
 	}
 
-	log.Printf("dryout: %v, avg dryout: %v, wt scale: %v, wt offset: %v, delta weight: %v", dryout, avgDryout, wts, wto, dw)
+	log.Printf("dryout: %v, wt scale: %v, wt offset: %v, delta weight: %v", dryout, wts, wto, dw)
 	log.Printf("watering time: %v", wt)
 
 	return clamp(wt, s.Config.WaterStart, s.Config.MaxWater) - s.WateringTimeData.Offset
@@ -609,7 +610,7 @@ func (s *station) updateWeightAndWatering(hour int) {
 
 	// calculate watering time
 	wt := 0
-	if hour == s.Config.WaterHour && w <= s.Config.LowLevel {
+	if hour == s.Config.WaterHour {
 		wt = s.calculateWatering(hour, w, true)
 	}
 	if wt > 0 {
