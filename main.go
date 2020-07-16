@@ -445,7 +445,7 @@ func (s *station) calculateDryoutAndWateringTime() (dryout, wateringTimeScale, w
 		prevw = w
 	}
 
-	if s.WateringTimeData.Scale > 0 {
+	if s.WateringTimeData.Scale > 0 && wn > 0 {
 		// add two data points 12.5% around weightgain average calculated from previous data for stable results
 		wgavg := wgsum / wn
 		wg1 := (wgavg - wgavg/8)
