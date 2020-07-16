@@ -616,6 +616,8 @@ func (s *station) updateWeightAndWatering(hour int) {
 	if wt > 0 {
 		wt = s.wuc.DoWatering(s.WateringTimeData.Offset, wt)
 		s.publish(s.MQTT.Topic+"/water", byte(2), false, fmt.Sprint(wt))
+	} else {
+		wt = 0
 	}
 
 	// update values
