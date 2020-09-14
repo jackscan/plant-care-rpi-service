@@ -513,25 +513,25 @@ func (s *station) calculateWatering(hour int, weight int, save bool) int {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	// lastw := (s.Config.WaterStart + s.Config.MaxWater) / 2
+	lastw := 0
 	durw := 1
 
 	if len(s.Data.Watering) > 0 {
 		for i := len(s.Data.Watering) - 1; i >= 0; i-- {
 			durw = len(s.Data.Watering) - i
 			if s.Data.Watering[i] > 0 {
-				// lastw = s.Data.Watering[i]
+				lastw = s.Data.Watering[i]
 				break
 			}
 		}
 	}
-
 	prevw := weight
 	if durw > 1 && len(s.Data.Weight) >= durw {
 		prevw = s.Data.Weight[len(s.Data.Weight)-durw+1]
 	}
 
-	log.Printf("last watered %v hours ago, last weight: %v", durw, prevw)
+	log.Printf("last watered %v hours ago, watered %vs, last weight: %v",
+		durw, lastw, prevw)
 
 	// dl := float32(s.Config.DstLevel - avg)
 	// rl := float32(s.Config.LevelRange)
@@ -546,16 +546,53 @@ func (s *station) calculateWatering(hour int, weight int, save bool) int {
 
 	dryout, wts, wto := s.calculateDryoutAndWateringTime()
 
+	wtime := func(dw int) int {
+		return wts*dw + wto
+	}
+	abs := func(i int) int {
+		if i < 0 {
+			return -i
+		}
+		return i
+	}
+
 	dw := 0
-	if weight > s.Config.LowLevel {
+	wt := 0
+	minLevel := s.Config.LowLevel + dryout*23/24
+
+	if weight <= s.Config.LowLevel {
+		// full refill
+		dw = s.Config.HighLevel - weight
+		wt = wtime(dw)
+		log.Printf("full refill")
+	} else if weight < minLevel {
+		dwhi := s.Config.HighLevel - weight
+		dwlo := minLevel - weight
+		hiwt := wtime(dwhi)
+		lowt := wtime(dwlo)
+		// clamp to high level
+		if minLevel > s.Config.HighLevel {
+			log.Print("clamping refill to high level")
+			dw = dwhi
+			wt = hiwt
+		} else if abs(hiwt-lastw) > abs(lowt-lastw) {
+			log.Print("refill to high level")
+			dw = dwhi
+			wt = hiwt
+		} else {
+			log.Print("minimum refill")
+			dw = dwlo
+			wt = lowt
+		}
+	} else {
 		dw = prevw - dryout*durw/24 + s.Config.DailyRefill - weight
+		// clamp to previous weight
 		if dw > prevw-weight {
 			dw = prevw - weight
 		}
-	} else {
-		dw = s.Config.HighLevel - weight
+		wt = wtime(dw)
+		log.Print("daily refill")
 	}
-	wt := wts*dw + wto
 
 	if save {
 		s.WateringTimeData.Offset = wto
