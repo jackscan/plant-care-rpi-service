@@ -16,6 +16,8 @@ const (
 	cmdRotate          = 0x13
 	cmdStop            = 0x14
 	cmdGetMotorStatus  = 0x15
+	cmdSetWaterRefill  = 0x16
+	cmdGetWaterRefill  = 0x17
 	cmdWatering        = 0x1A
 	cmdEcho            = 0x29
 )
@@ -252,6 +254,42 @@ func (w *Wuc) ReadWateringLimit() (int, error) {
 	}
 
 	return int(l), nil
+}
+
+// SetRefillInterval sends command to set refill interval.
+func (w *Wuc) SetRefillInterval(i uint8) error {
+	cmd := []byte{
+		cmdSetWaterRefill,
+		byte(i),
+	}
+
+	n, err := w.connection.Write(cmd)
+	if err != nil {
+		return fmt.Errorf("failed to send set-refill command: %v", err)
+	}
+
+	if n < len(cmd) {
+		return fmt.Errorf("could not send complete set-refill command: %v/%v", n, len(cmd))
+	}
+
+	return nil
+}
+
+// ReadRefillInterval sends command to get currently set refill interval.
+func (w *Wuc) ReadRefillInterval() (int, error) {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+
+	if err := w.connection.WriteByte(cmdGetWaterRefill); err != nil {
+		return 0, err
+	}
+
+	r, err := w.connection.ReadByte()
+	if err != nil {
+		return 0, err
+	}
+
+	return int(r), nil
 }
 
 // Echo sends echo command with data of given buffer and returns result.

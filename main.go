@@ -186,6 +186,7 @@ func main() {
 	http.HandleFunc("/echo", echoHandler(&s))
 	http.HandleFunc("/pic", auth.JustCheck(authenticator, pictureHandler(&s)))
 	http.HandleFunc("/rotate", auth.JustCheck(authenticator, rotationHandler(&s)))
+	http.HandleFunc("/refill", auth.JustCheck(authenticator, refillHandler(&s)))
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
@@ -994,6 +995,41 @@ func calcWateringHandler(s *station) func(w http.ResponseWriter, r *http.Request
 		dryout, wts, wto := s.calculateDryoutAndWateringTime()
 
 		fmt.Fprintf(w, "%v %v %v", dryout, wts, wto)
+	}
+}
+
+func refillHandler(s *station) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var err error
+		args, ok := r.URL.Query()["t"]
+
+		if !ok || len(args) < 1 {
+			t, err := s.wuc.ReadRefillInterval()
+			if err != nil {
+				log.Println("failed to read refill interval: ", err)
+			}
+			fmt.Fprintf(w, "%v", t)
+			return
+		}
+
+		t, err := strconv.Atoi(args[0])
+		if err != nil {
+			fmt.Fprintf(w, "invalid argument: %v", err)
+			return
+		}
+
+		if t < 0 || t > 240 {
+			fmt.Fprintln(w, "invalid interval")
+			return
+		}
+
+		err = s.wuc.SetRefillInterval(uint8(t))
+		if err != nil {
+			fmt.Fprintln(w, "failed to set refill interval: ", err)
+			return
+		}
+
+		fmt.Fprintln(w, "refill interval updated")
 	}
 }
 
