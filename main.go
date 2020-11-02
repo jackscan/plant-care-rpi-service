@@ -526,13 +526,15 @@ func (s *station) calculateWatering(hour int, weight int, save bool) int {
 			}
 		}
 	}
-	prevw := weight
+	prevhi := weight
+	prevlo := weight
 	if durw > 1 && len(s.Data.Weight) >= durw {
-		prevw = s.Data.Weight[len(s.Data.Weight)-durw+1]
+		prevlo = s.Data.Weight[len(s.Data.Weight)-durw]
+		prevhi = s.Data.Weight[len(s.Data.Weight)-durw+1]
 	}
 
-	log.Printf("last watered %v hours ago, watered %vs, last weight: %v",
-		durw, lastw, prevw)
+	log.Printf("last watered %v hours ago, watered %vs, last weights: %v, %v",
+		durw, lastw, prevlo, prevhi)
 
 	// dl := float32(s.Config.DstLevel - avg)
 	// rl := float32(s.Config.LevelRange)
@@ -549,12 +551,6 @@ func (s *station) calculateWatering(hour int, weight int, save bool) int {
 
 	wtime := func(dw int) int {
 		return wts*dw + wto
-	}
-	abs := func(i int) int {
-		if i < 0 {
-			return -i
-		}
-		return i
 	}
 
 	dw := 0
@@ -576,7 +572,7 @@ func (s *station) calculateWatering(hour int, weight int, save bool) int {
 			log.Print("clamping refill to high level")
 			dw = dwhi
 			wt = hiwt
-		} else if abs(hiwt-lastw) > abs(lowt-lastw) {
+		} else if prevlo < minLevel {
 			log.Print("refill to high level")
 			dw = dwhi
 			wt = hiwt
@@ -586,10 +582,10 @@ func (s *station) calculateWatering(hour int, weight int, save bool) int {
 			wt = lowt
 		}
 	} else {
-		dw = prevw - dryout*durw/24 + s.Config.DailyRefill - weight
+		dw = prevhi - dryout*durw/24 + s.Config.DailyRefill - weight
 		// clamp to previous weight
-		if dw > prevw-weight {
-			dw = prevw - weight
+		if dw > prevhi-weight {
+			dw = prevhi - weight
 		}
 		wt = wtime(dw)
 		log.Print("daily refill")
