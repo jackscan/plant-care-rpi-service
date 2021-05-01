@@ -572,7 +572,10 @@ func (s *station) calculateWatering(hour int, weight int, save bool) int {
 			log.Print("clamping refill to high level")
 			dw = dwhi
 			wt = hiwt
-		} else if prevlo < minLevel {
+		} else if prevlo < minLevel && prevhi < (s.Config.HighLevel+minLevel)/2 {
+			// Previous low level was already in range for minimum refill,
+			// and previous high level was nearer to minimum refill level
+			// than to full refill.
 			log.Print("refill to high level")
 			dw = dwhi
 			wt = hiwt
