@@ -192,9 +192,14 @@ func (w *Wuc) DoWatering(start, watering int) int {
 			log.Println("failure on waiting for motor:", err)
 		}
 
-		r, err = w.readLastWatering()
-		if err != nil {
-			log.Println(err)
+		for i := 0; r == 0 && i < 5; i++ {
+			time.Sleep(time.Millisecond * 100)
+			r, err = w.readLastWatering()
+			if err != nil {
+				log.Println(err)
+			} else if r == 0 {
+				log.Println("got no watering")
+			}
 		}
 	}
 
