@@ -584,7 +584,7 @@ func (s *station) calculateWatering(hour int, weight int, save bool) int {
 			dw = dwlo
 			wt = lowt
 		}
-	} else {
+	} else if s.Config.DailyRefill > 0 {
 		dw = prevhi - dryout*durw/24 + s.Config.DailyRefill - weight
 		// clamp to previous weight
 		if dw > prevhi-weight {
@@ -601,6 +601,10 @@ func (s *station) calculateWatering(hour int, weight int, save bool) int {
 
 	log.Printf("dryout: %v, wt scale: %v, wt offset: %v, delta weight: %v", dryout, wts, wto, dw)
 	log.Printf("watering time: %v", wt)
+
+	if wt <= 0 {
+		return 0
+	}
 
 	return clamp(wt, s.Config.WaterStart, s.Config.MaxWater) - s.WateringTimeData.Offset
 }
